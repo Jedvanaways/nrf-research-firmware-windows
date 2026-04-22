@@ -47,6 +47,7 @@
         <div class="control-row">
           <button id="scan-start" class="btn-primary">Start scan</button>
           <button id="scan-stop" class="btn-secondary">Stop</button>
+          <button id="scan-quickdiscover" class="btn-secondary">Quick discover (15s)</button>
           <label class="inline-check">
             <input type="checkbox" id="scan-record"> Record this session to JSONL
           </label>
@@ -58,12 +59,28 @@
         <div id="channel-heatmap" class="heatmap"></div>
       </div>
 
-      <table class="packets">
-        <thead>
-          <tr><th>Time</th><th>Ch</th><th>Len</th><th>Address</th><th>Payload</th></tr>
-        </thead>
-        <tbody id="scan-tbody"></tbody>
-      </table>
+      <div class="split-panels">
+        <div class="panel panel-addrs">
+          <div class="panel-title">Addresses seen</div>
+          <table class="packets">
+            <thead>
+              <tr><th>Address</th><th>Count</th><th>Last ch</th><th></th></tr>
+            </thead>
+            <tbody id="scan-addrs-tbody">
+              <tr class="empty-row"><td colspan="4">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel panel-packets">
+          <div class="panel-title">Packet stream</div>
+          <table class="packets">
+            <thead>
+              <tr><th>Time</th><th>Ch</th><th>Len</th><th>Address</th><th>Payload</th></tr>
+            </thead>
+            <tbody id="scan-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <!-- SNIFF -->

@@ -14,6 +14,7 @@ const state = {
   packetCount: 0,
   recording: false,
   channelActivity: new Map(), // ch -> count
+  addresses: new Map(),       // addr -> {count, lastCh, lastPayload, lastT}
 };
 
 // Ring buffer per tab (so Scan and Sniff don't stomp on each other).
@@ -126,6 +127,47 @@ function pushPacket(tab, ev) {
   while (tbody.children.length > MAX_ROWS) {
     tbody.removeChild(tbody.lastChild);
   }
+
+  if (tab === "scan" && ev.addr) {
+    const prev = state.addresses.get(ev.addr) || { count: 0 };
+    state.addresses.set(ev.addr, {
+      count: prev.count + 1,
+      lastCh: ev.ch,
+      lastPayload: ev.payload,
+      lastT: ev.t,
+    });
+    renderAddressPanel();
+  }
+}
+
+function renderAddressPanel() {
+  const tbody = document.getElementById("scan-addrs-tbody");
+  if (!tbody) return;
+  const sorted = [...state.addresses.entries()].sort((a, b) => b[1].count - a[1].count);
+  if (!sorted.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">—</td></tr>';
+    return;
+  }
+  tbody.innerHTML = "";
+  sorted.forEach(([addr, info], i) => {
+    const row = document.createElement("tr");
+    if (i === 0) row.classList.add("top-addr-row");
+    row.innerHTML = `
+      <td title="last payload: ${info.lastPayload || ''}">${addr}</td>
+      <td>${info.count}</td>
+      <td>${info.lastCh ?? "—"}</td>
+      <td><button class="sniff-btn" data-addr="${addr}">Sniff →</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+  tbody.querySelectorAll(".sniff-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      document.getElementById("sniff-address").value = btn.dataset.addr;
+      document.querySelector('.tab[data-tab="sniff"]').click();
+      toast(`Locked onto ${btn.dataset.addr}`, "ok");
+    });
+  });
 }
 
 // ------------------------------------------------ channels parsing --
@@ -222,12 +264,41 @@ document.getElementById("scan-start").addEventListener("click", async () => {
     prefix: document.getElementById("scan-prefix").value,
   };
   state.channelActivity.clear();
+  state.addresses.clear();
+  renderAddressPanel();
   buffers.scan = [];
   document.getElementById("scan-tbody").innerHTML = "";
   if (document.getElementById("scan-record").checked) {
     await apiPost("/api/recording/start", { filename: null });
   }
   await apiPost("/api/scan/start", body);
+});
+
+document.getElementById("scan-quickdiscover").addEventListener("click", async () => {
+  // Full-range scan for 15s, then auto-switch to sniff on the top address.
+  state.channelActivity.clear();
+  state.addresses.clear();
+  renderAddressPanel();
+  buffers.scan = [];
+  document.getElementById("scan-tbody").innerHTML = "";
+
+  toast("Quick discover: 15s full-range scan starting", "ok");
+  const start = await apiPost("/api/scan/start", {
+    channels: null, dwell_ms: 100, prefix: "",
+  });
+  if (!start) return;
+  await new Promise((r) => setTimeout(r, 15000));
+  await apiPost("/api/stop", {});
+
+  const sorted = [...state.addresses.entries()].sort((a, b) => b[1].count - a[1].count);
+  if (!sorted.length) {
+    toast("No packets detected. Nothing nRF24 in range?", "warn");
+    return;
+  }
+  const [topAddr, topInfo] = sorted[0];
+  document.getElementById("sniff-address").value = topAddr;
+  toast(`Top address: ${topAddr} (${topInfo.count} packets). Switched to Sniff tab.`, "ok");
+  document.querySelector('.tab[data-tab="sniff"]').click();
 });
 
 document.getElementById("scan-stop").addEventListener("click", async () => {

@@ -256,6 +256,64 @@ button {
 .packets th:nth-child(3), .packets td:nth-child(3) { width: 40px; }
 .packets th:nth-child(4), .packets td:nth-child(4) { width: 150px; }
 
+.empty-row td {
+  text-align: center;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 20px !important;
+}
+
+/* Split panels on Scan tab --------------------------------------- */
+.split-panels {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.panel-title {
+  padding: 10px 14px;
+  background: var(--bg-elev-2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.panel-addrs .packets,
+.panel-packets .packets {
+  border: none;
+  border-radius: 0;
+}
+
+.panel-addrs .packets th:nth-child(1) { width: auto; }
+.panel-addrs .packets th:nth-child(2) { width: 60px; }
+.panel-addrs .packets th:nth-child(3) { width: 60px; }
+.panel-addrs .packets th:nth-child(4) { width: 70px; }
+
+.sniff-btn {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  background: var(--accent-dim);
+  color: var(--text);
+  border: none;
+  border-radius: 3px;
+}
+
+.top-addr-row { outline: 1px solid var(--accent); outline-offset: -1px; }
+
+/* Responsive — stack panels on narrow viewports */
+@media (max-width: 900px) {
+  .split-panels { grid-template-columns: 1fr; }
+}
+
 /* Warn box ------------------------------------------------------- */
 .warn-box {
   background: rgba(245, 169, 107, 0.08);
