@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>nRF24 console</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="top-bar">
+    <div class="brand">
+      <span class="logo">⚡</span>
+      <span class="title">nRF24 console</span>
+    </div>
+    <div class="status-chips">
+      <span id="chip-conn" class="chip chip-disconnected">radio: …</span>
+      <span id="chip-mode" class="chip">mode: idle</span>
+      <span id="chip-channel" class="chip">ch: —</span>
+      <span id="chip-packets" class="chip">pkts: 0</span>
+      <span id="chip-recording" class="chip chip-hidden">● recording</span>
+    </div>
+  </header>
+
+  <nav class="tab-bar">
+    <button class="tab active" data-tab="scan">Scan</button>
+    <button class="tab" data-tab="sniff">Sniff</button>
+    <button class="tab" data-tab="transmit">Transmit</button>
+    <button class="tab" data-tab="recordings">Recordings</button>
+    <button class="tab" data-tab="assistant" id="tab-btn-assistant">Assistant</button>
+  </nav>
+
+  <main>
+    <!-- SCAN -->
+    <section id="tab-scan" class="tab-pane active">
+      <div class="controls">
+        <div class="control-row">
+          <label>Channels
+            <input type="text" id="scan-channels" placeholder="2-83 or 2,4,6" value="2-83">
+          </label>
+          <label>Dwell (ms)
+            <input type="number" id="scan-dwell" min="5" max="2000" value="100">
+          </label>
+          <label>Prefix (hex, optional)
+            <input type="text" id="scan-prefix" placeholder="e.g. AA:BB or empty" value="">
+          </label>
+        </div>
+        <div class="control-row">
+          <button id="scan-start" class="btn-primary">Start scan</button>
+          <button id="scan-stop" class="btn-secondary">Stop</button>
+          <label class="inline-check">
+            <input type="checkbox" id="scan-record"> Record this session to JSONL
+          </label>
+        </div>
+      </div>
+
+      <div class="channel-activity">
+        <div class="ca-label">Channel activity</div>
+        <div id="channel-heatmap" class="heatmap"></div>
+      </div>
+
+      <table class="packets">
+        <thead>
+          <tr><th>Time</th><th>Ch</th><th>Len</th><th>Address</th><th>Payload</th></tr>
+        </thead>
+        <tbody id="scan-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- SNIFF -->
+    <section id="tab-sniff" class="tab-pane">
+      <div class="controls">
+        <div class="control-row">
+          <label>Address
+            <input type="text" id="sniff-address" placeholder="AA:BB:CC:DD:EE">
+          </label>
+          <label>Channel timeout (ms)
+            <input type="number" id="sniff-timeout" min="20" value="100">
+          </label>
+          <label>Retries
+            <input type="number" id="sniff-retries" min="0" max="15" value="1">
+          </label>
+        </div>
+        <div class="control-row">
+          <button id="sniff-start" class="btn-primary">Start sniff</button>
+          <button id="sniff-stop" class="btn-secondary">Stop</button>
+          <label class="inline-check">
+            <input type="checkbox" id="sniff-record"> Record
+          </label>
+        </div>
+      </div>
+
+      <table class="packets">
+        <thead>
+          <tr><th>Time</th><th>Ch</th><th>Len</th><th>Address</th><th>Payload</th></tr>
+        </thead>
+        <tbody id="sniff-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- TRANSMIT -->
+    <section id="tab-transmit" class="tab-pane">
+      <div class="warn-box">
+        ⚠ Transmitting payloads affects real radios. Only transmit against devices you own.
+      </div>
+      <div class="controls">
+        <div class="control-row">
+          <label>Address
+            <input type="text" id="tx-address" placeholder="AA:BB:CC:DD:EE">
+          </label>
+          <label>Payload (hex)
+            <input type="text" id="tx-payload" placeholder="0F:0F:0F:0F">
+          </label>
+        </div>
+        <div class="control-row">
+          <label>Mode
+            <select id="tx-mode">
+              <option value="esb">ESB (with ACK)</option>
+              <option value="generic">Generic (no ACK)</option>
+            </select>
+          </label>
+          <label>Retries
+            <input type="number" id="tx-retries" min="0" max="15" value="5">
+          </label>
+          <button id="tx-send" class="btn-primary">Send</button>
+        </div>
+      </div>
+      <div class="log-panel" id="tx-log"></div>
+    </section>
+
+    <!-- RECORDINGS -->
+    <section id="tab-recordings" class="tab-pane">
+      <div class="controls">
+        <button id="rec-refresh" class="btn-secondary">Refresh</button>
+      </div>
+      <table class="packets">
+        <thead>
+          <tr><th>Name</th><th>Size</th><th>Modified</th></tr>
+        </thead>
+        <tbody id="rec-tbody"></tbody>
+      </table>
+    </section>
+
+    <!-- ASSISTANT -->
+    <section id="tab-assistant" class="tab-pane">
+      <div id="ai-unavailable" class="warn-box" style="display:none;">
+        AI assistant is disabled. <span id="ai-reason"></span>.
+        Set <code>ANTHROPIC_API_KEY</code> and restart to enable.
+      </div>
+      <div id="ai-chat-box" class="chat-box">
+        <div id="ai-messages" class="chat-messages"></div>
+        <div class="chat-input-row">
+          <textarea id="ai-input" rows="2"
+                    placeholder="e.g. 'Scan for 15 seconds and tell me what you find.' (Shift+Enter for newline)"></textarea>
+          <button id="ai-send" class="btn-primary">Send</button>
+        </div>
+        <div class="chat-hints">
+          Try: <span class="hint" data-prompt="Scan the full channel range for 20 seconds and summarise what's active.">full scan</span>
+          · <span class="hint" data-prompt="What recordings do I have?">list recordings</span>
+          · <span class="hint" data-prompt="What's the radio doing right now?">status</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-container"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

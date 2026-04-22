@@ -1,0 +1,26 @@
+nrf-research-firmware-windows
+=============================
+
+This project is a Windows-focused derivative of:
+
+  Bastille Networks' nrf-research-firmware
+  https://github.com/BastilleResearch/nrf-research-firmware
+  Built from upstream commit:
+    02b84d1c4e59c0fb98263c83b2e7c7f9863a3b93  (2016-07-26)
+
+Upstream copyright and licence notice, preserved verbatim:
+
+  Copyright (C) 2016 Bastille Networks Inc.
+  Licensed under the GNU General Public License, Version 3
+  (or, at your option, any later version).
+
+Changes introduced by this project ("Windows port"):
+
+  Copyright (C) 2026 Jed Williams
+  Licensed under the same terms (GNU GPL v3 or later).
+
+A summary of the Windows-port modifications is given in CHANGES.md.
+The full licence text is in LICENSE. See also:
+
+  - https://www.gnu.org/licenses/gpl-3.0.html
+  - https://www.bastille.net/research/vulnerabilities/mousejack/

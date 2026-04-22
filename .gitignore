@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+.venv/
+venv/
+env/
+.env
+
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+*.log
+
+# Recorded captures (user data, not source)
+recordings/
+*.jsonl
+
+dist/
+build/
+*.egg-info/
