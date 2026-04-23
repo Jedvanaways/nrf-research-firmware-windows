@@ -162,7 +162,7 @@ def _require_idle() -> None:
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/api/status")
@@ -221,6 +221,24 @@ async def recording_stop():
     assert worker is not None
     worker.command_queue.put(Command("recording_stop", {}))
     return {"ok": True}
+
+
+@app.get("/api/recent_packets")
+async def recent_packets(since: float | None = None, until: float | None = None,
+                          limit: int = 500):
+    """
+    Snapshot of packets from the worker's in-memory ring buffer within a
+    time window. Used by the Learn tab to correlate button presses with
+    RF captures.
+    """
+    assert worker is not None
+    packets = [
+        e for e in list(worker.recent_events)
+        if e.get("type") == "packet"
+        and (since is None or e.get("t", 0) >= since)
+        and (until is None or e.get("t", 0) <= until)
+    ]
+    return {"packets": packets[-limit:]}
 
 
 @app.get("/api/recordings")

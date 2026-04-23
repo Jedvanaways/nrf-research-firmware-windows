@@ -372,6 +372,92 @@ button {
   to   { transform: translateX(0); opacity: 1; }
 }
 
+/* Learn tab ------------------------------------------------------ */
+.countdown-display {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-left: 20px;
+  min-width: 200px;
+}
+
+.countdown-display.press {
+  color: var(--warn);
+  animation: pulse 0.3s ease-in-out 3;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.learn-library {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.learn-empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 40px 20px;
+  font-style: italic;
+  background: var(--bg-elev);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.learn-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.learn-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.learn-card-title {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.learn-card-meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+.learn-card-packets {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--bg);
+  padding: 8px 10px;
+  border-radius: 4px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.learn-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.learn-card-actions button {
+  padding: 4px 10px;
+  font-size: 11px;
+}
+
 /* Chat / AI assistant ------------------------------------------- */
 .chat-box {
   display: flex;

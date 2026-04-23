@@ -26,6 +26,7 @@
     <button class="tab" data-tab="sniff">Sniff</button>
     <button class="tab" data-tab="transmit">Transmit</button>
     <button class="tab" data-tab="recordings">Recordings</button>
+    <button class="tab" data-tab="learn">Learn</button>
     <button class="tab" data-tab="assistant" id="tab-btn-assistant">Assistant</button>
   </nav>
 
@@ -155,6 +156,38 @@
         </thead>
         <tbody id="rec-tbody"></tbody>
       </table>
+    </section>
+
+    <!-- LEARN -->
+    <section id="tab-learn" class="tab-pane">
+      <div class="warn-box" style="background:rgba(79,209,197,0.08);border-color:rgba(79,209,197,0.3);color:var(--accent);">
+        Press a physical button on your device in time with the on-screen countdown.
+        The app captures all nRF24 packets in a ±250 ms window around the press and filters out background traffic.
+        Repeat for each button to build a command map.
+      </div>
+      <div class="controls">
+        <div class="control-row">
+          <label>Label
+            <input type="text" id="learn-label" placeholder="e.g. 'Temp up' or 'Power on'">
+          </label>
+          <label>Window (ms before/after)
+            <input type="number" id="learn-window" value="250" min="50" max="2000" step="50">
+          </label>
+          <label>Countdown (seconds)
+            <input type="number" id="learn-countdown" value="3" min="1" max="10">
+          </label>
+        </div>
+        <div class="control-row">
+          <button id="learn-start" class="btn-primary">Start capture</button>
+          <button id="learn-clear" class="btn-secondary">Clear library</button>
+          <span id="learn-countdown-display" class="countdown-display"></span>
+        </div>
+      </div>
+
+      <div class="panel-title">Captured commands</div>
+      <div id="learn-library" class="learn-library">
+        <div class="learn-empty">No captures yet. Fill in a label and click <b>Start capture</b>.</div>
+      </div>
     </section>
 
     <!-- ASSISTANT -->

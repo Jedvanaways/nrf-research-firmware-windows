@@ -389,6 +389,155 @@ async function apiPost(path, body) {
   }
 }
 
+// ---------------------------------------------- Learn mode ---
+
+const LEARN_LIB_KEY = "nrf24.learn.library";
+const learnLibrary = JSON.parse(localStorage.getItem(LEARN_LIB_KEY) || "[]");
+
+function saveLearnLibrary() {
+  localStorage.setItem(LEARN_LIB_KEY, JSON.stringify(learnLibrary));
+}
+
+function renderLearnLibrary() {
+  const el = document.getElementById("learn-library");
+  if (!el) return;
+  if (!learnLibrary.length) {
+    el.innerHTML = '<div class="learn-empty">No captures yet. Fill in a label and click <b>Start capture</b>.</div>';
+    return;
+  }
+  el.innerHTML = "";
+  learnLibrary.slice().reverse().forEach((entry, revIdx) => {
+    const idx = learnLibrary.length - 1 - revIdx;
+    const card = document.createElement("div");
+    card.className = "learn-card";
+    const packetsStr = (entry.packets || []).map((p) =>
+      `ch${String(p.ch).padStart(2, " ")}  ${p.addr}  ${p.payload}`
+    ).join("\n") || "(no packets caught in window)";
+    card.innerHTML = `
+      <div class="learn-card-head">
+        <span class="learn-card-title">${escapeHtml(entry.label)}</span>
+        <span class="learn-card-meta">${new Date(entry.captured_at * 1000).toISOString().slice(11, 19)} · ${entry.packets.length} packet(s) · ±${entry.window_ms}ms</span>
+      </div>
+      <div class="learn-card-packets">${escapeHtml(packetsStr)}</div>
+      <div class="learn-card-actions">
+        <button class="btn-secondary" data-action="replay" data-idx="${idx}">Replay via Transmit</button>
+        <button class="btn-secondary" data-action="export">Copy JSON</button>
+        <button class="btn-secondary" data-action="delete" data-idx="${idx}">Delete</button>
+      </div>
+    `;
+    el.appendChild(card);
+  });
+  el.querySelectorAll(".learn-card-actions button").forEach((btn) => {
+    btn.addEventListener("click", () => handleLearnCardAction(btn));
+  });
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function handleLearnCardAction(btn) {
+  const action = btn.dataset.action;
+  if (action === "delete") {
+    const idx = Number(btn.dataset.idx);
+    learnLibrary.splice(idx, 1);
+    saveLearnLibrary();
+    renderLearnLibrary();
+    return;
+  }
+  if (action === "export") {
+    const json = JSON.stringify(learnLibrary, null, 2);
+    navigator.clipboard.writeText(json).then(() => toast("Library copied to clipboard", "ok"));
+    return;
+  }
+  if (action === "replay") {
+    const idx = Number(btn.dataset.idx);
+    const entry = learnLibrary[idx];
+    if (!entry.packets.length) { toast("No packets to replay", "warn"); return; }
+    const pkt = entry.packets[0];
+    document.getElementById("tx-address").value = pkt.addr;
+    document.getElementById("tx-payload").value = pkt.payload;
+    document.querySelector('.tab[data-tab="transmit"]').click();
+    toast(`Loaded '${entry.label}' into Transmit tab`, "ok");
+  }
+}
+
+async function runLearnCapture() {
+  const label = document.getElementById("learn-label").value.trim();
+  if (!label) { toast("Enter a label first", "warn"); return; }
+  const windowMs = Number(document.getElementById("learn-window").value);
+  const countdown = Number(document.getElementById("learn-countdown").value);
+  const cdEl = document.getElementById("learn-countdown-display");
+  const startBtn = document.getElementById("learn-start");
+  startBtn.disabled = true;
+
+  try {
+    // Kick off a full-range promiscuous scan so we catch whatever channel the device uses.
+    cdEl.className = "countdown-display";
+    cdEl.textContent = "arming radio…";
+    await apiPost("/api/scan/start", { channels: null, dwell_ms: 50, prefix: "" });
+
+    // Countdown
+    for (let i = countdown; i >= 1; i--) {
+      cdEl.textContent = `press in ${i}…`;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    cdEl.textContent = "PRESS NOW";
+    cdEl.className = "countdown-display press";
+    const pressT = Date.now() / 1000;
+
+    // Capture window
+    const extraMs = windowMs + 250;
+    await new Promise((r) => setTimeout(r, extraMs));
+    await apiPost("/api/stop", {});
+
+    // Pull packets in [pressT - W, pressT + W]
+    const windowS = windowMs / 1000;
+    const url = `/api/recent_packets?since=${pressT - windowS}&until=${pressT + windowS}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const packets = data.packets || [];
+
+    const entry = {
+      label,
+      captured_at: pressT,
+      window_ms: windowMs,
+      packets,
+    };
+    learnLibrary.push(entry);
+    saveLearnLibrary();
+    renderLearnLibrary();
+
+    cdEl.textContent = packets.length
+      ? `captured ${packets.length} packet(s)`
+      : "no packets in window — try again closer to the press";
+    cdEl.className = "countdown-display";
+    document.getElementById("learn-label").value = "";
+    if (packets.length) {
+      toast(`Captured '${label}': ${packets.length} packet(s)`, "ok");
+    } else {
+      toast("No packets in the window — get closer to the press timing", "warn");
+    }
+  } catch (e) {
+    cdEl.textContent = `error: ${e.message}`;
+    toast(`Capture failed: ${e.message}`, "error");
+  } finally {
+    startBtn.disabled = false;
+  }
+}
+
+document.getElementById("learn-start").addEventListener("click", runLearnCapture);
+document.getElementById("learn-clear").addEventListener("click", () => {
+  if (learnLibrary.length === 0) return;
+  if (!confirm(`Clear all ${learnLibrary.length} captured command(s)?`)) return;
+  learnLibrary.length = 0;
+  saveLearnLibrary();
+  renderLearnLibrary();
+});
+renderLearnLibrary();
+
 // ---------------------------------------------- AI assistant ---
 
 const chatHistory = [];   // conversation history passed back to Claude
