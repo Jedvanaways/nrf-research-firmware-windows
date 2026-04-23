@@ -57,6 +57,7 @@
           <button id="scan-start" class="btn-primary">Start scan</button>
           <button id="scan-stop" class="btn-secondary">Stop</button>
           <button id="scan-quickdiscover" class="btn-secondary">Quick discover (15s)</button>
+          <button id="scan-huntlt8910" class="btn-secondary" title="Exhaustive sweep across LT8910 channels 0-79 at both 1 Mbps and 250 kbps. Press your remote throughout.">Hunt LT8910</button>
           <label class="inline-check">
             <input type="checkbox" id="scan-record"> Record this session to JSONL
           </label>
@@ -66,6 +67,16 @@
       <div class="channel-activity">
         <div class="ca-label">Channel activity</div>
         <div id="channel-heatmap" class="heatmap"></div>
+      </div>
+
+      <div id="hunt-results" class="hunt-results" style="display:none;">
+        <div class="panel-title">LT8910 Hunt — activity per (channel, rate)</div>
+        <div id="hunt-progress" class="hunt-progress"></div>
+        <div id="hunt-grid" class="hunt-grid"></div>
+        <table class="packets" id="hunt-ranked" style="margin-top:12px;">
+          <thead><tr><th>Rate</th><th>Ch</th><th>Packets</th><th></th></tr></thead>
+          <tbody id="hunt-ranked-tbody"></tbody>
+        </table>
       </div>
 
       <div class="split-panels">

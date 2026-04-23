@@ -327,6 +327,60 @@ button {
   .split-panels { grid-template-columns: 1fr; }
 }
 
+/* Hunt results --------------------------------------------------- */
+.hunt-results {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.hunt-progress {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 4px;
+}
+
+.hunt-grid {
+  display: grid;
+  grid-template-columns: 40px repeat(80, 1fr);
+  gap: 2px;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  align-items: center;
+}
+
+.hunt-row-label {
+  color: var(--text-dim);
+  text-align: right;
+  padding-right: 6px;
+  font-size: 10px;
+}
+
+.hunt-cell {
+  height: 16px;
+  background: var(--bg-elev-2);
+  border-radius: 2px;
+  position: relative;
+  cursor: pointer;
+}
+
+.hunt-cell:hover {
+  outline: 1px solid var(--accent);
+}
+
+.hunt-header {
+  color: var(--text-dim);
+  text-align: center;
+  font-size: 9px;
+}
+
 /* Warn box ------------------------------------------------------- */
 .warn-box {
   background: rgba(245, 169, 107, 0.08);

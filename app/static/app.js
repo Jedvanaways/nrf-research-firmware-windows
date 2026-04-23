@@ -278,6 +278,135 @@ document.getElementById("scan-start").addEventListener("click", async () => {
   await apiPost("/api/scan/start", body);
 });
 
+document.getElementById("scan-huntlt8910").addEventListener("click", runLT8910Hunt);
+
+async function runLT8910Hunt() {
+  const btn = document.getElementById("scan-huntlt8910");
+  const resultsEl = document.getElementById("hunt-results");
+  const progressEl = document.getElementById("hunt-progress");
+  const gridEl = document.getElementById("hunt-grid");
+  const rankedTbody = document.getElementById("hunt-ranked-tbody");
+
+  // User confirmation — this takes a while
+  const perChannelMs = 500;
+  const channels = Array.from({ length: 80 }, (_, i) => i);   // 0..79
+  const rates = ["generic_1m", "generic_250k"];
+  const totalSteps = channels.length * rates.length;
+  const estSeconds = Math.ceil((totalSteps * (perChannelMs + 150)) / 1000);
+  if (!confirm(
+    `LT8910 Hunt will sweep 80 channels × 2 data rates = 160 scans, ~${estSeconds}s total.\n\n` +
+    `PRESS YOUR REMOTE BUTTONS REPEATEDLY throughout. Don't release for more than 1-2 seconds.\n\n` +
+    `Continue?`
+  )) return;
+
+  btn.disabled = true;
+  resultsEl.style.display = "block";
+  progressEl.textContent = "Starting...";
+
+  // Build the grid: two rows (1 Mbps, 250 kbps), 80 columns each, + label column + header row
+  gridEl.innerHTML = "";
+  // Header row
+  gridEl.appendChild(makeDiv("hunt-row-label", ""));
+  for (const ch of channels) {
+    gridEl.appendChild(makeDiv("hunt-header", ch % 10 === 0 ? String(ch) : ""));
+  }
+  const rowCells = {};
+  for (const rate of rates) {
+    gridEl.appendChild(makeDiv("hunt-row-label", rate === "generic_1m" ? "1M" : "250k"));
+    rowCells[rate] = [];
+    for (const ch of channels) {
+      const cell = makeDiv("hunt-cell", "");
+      cell.title = `${rate} ch ${ch} — pending`;
+      cell.dataset.rate = rate;
+      cell.dataset.ch = String(ch);
+      gridEl.appendChild(cell);
+      rowCells[rate].push(cell);
+    }
+  }
+
+  const results = []; // {rate, ch, count}
+  let step = 0;
+  const startTime = Date.now();
+
+  for (const rate of rates) {
+    for (const ch of channels) {
+      step++;
+      const eta = Math.max(0, Math.round(((Date.now() - startTime) / step) * (totalSteps - step) / 1000));
+      progressEl.textContent = `step ${step}/${totalSteps}  rate=${rate}  ch=${ch}  ETA ${eta}s  — KEEP PRESSING`;
+
+      const windowStart = Date.now() / 1000;
+      await apiPost("/api/scan/start", {
+        channels: [ch],
+        dwell_ms: perChannelMs,
+        scan_mode: rate,
+      });
+      await new Promise((r) => setTimeout(r, perChannelMs));
+      await apiPost("/api/stop", {});
+      const windowEnd = Date.now() / 1000;
+
+      // Tiny pause so the scan/stop pair doesn't stampede the USB endpoint
+      await new Promise((r) => setTimeout(r, 80));
+
+      // Query packets within that window
+      const res = await fetch(
+        `/api/recent_packets?since=${windowStart}&until=${windowEnd + 0.2}&limit=200`
+      );
+      const data = await res.json();
+      const count = (data.packets || []).filter((p) => p.ch === ch && p.source !== "mock-lt8910").length;
+      results.push({ rate, ch, count });
+
+      // Paint cell
+      const cell = rowCells[rate][ch];
+      const intensity = Math.min(count / 10, 1);
+      cell.style.background = count > 0
+        ? `hsl(35, 80%, ${20 + intensity * 40}%)`    // orange-y — count scales saturation
+        : "var(--bg-elev-2)";
+      cell.title = `${rate} ch ${ch} — ${count} packets`;
+      cell.addEventListener("click", () => {
+        document.getElementById("scan-channels").value = String(ch);
+        document.getElementById("scan-mode").value = rate;
+        toast(`Channels set to ${ch}, mode ${rate}`, "ok");
+      });
+    }
+  }
+
+  // Build ranked list of top 20 (rate, ch) by count
+  const ranked = results.filter((r) => r.count > 0).sort((a, b) => b.count - a.count).slice(0, 20);
+  rankedTbody.innerHTML = "";
+  if (!ranked.length) {
+    rankedTbody.innerHTML = '<tr class="empty-row"><td colspan="4">No activity captured in any channel/rate. If you were pressing the remote, this confirms the nRF24 radio can\'t see the LT8910 at all — hardware-level chip incompatibility. Time for the LT8910 module.</td></tr>';
+  } else {
+    ranked.forEach((r) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${r.rate === "generic_1m" ? "1 Mbps" : "250 kbps"}</td>
+        <td>${r.ch}</td>
+        <td>${r.count}</td>
+        <td><button class="sniff-btn" data-rate="${r.rate}" data-ch="${r.ch}">Scan this →</button></td>
+      `;
+      rankedTbody.appendChild(row);
+    });
+    rankedTbody.querySelectorAll("button").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.getElementById("scan-channels").value = b.dataset.ch;
+        document.getElementById("scan-mode").value = b.dataset.rate;
+        document.getElementById("scan-dwell").value = "500";
+        toast(`Configured: ch ${b.dataset.ch}, ${b.dataset.rate}. Click Start scan.`, "ok");
+      });
+    });
+  }
+
+  progressEl.textContent = `done in ${Math.round((Date.now() - startTime) / 1000)}s — ${ranked.length} active (channel, rate) pair(s)`;
+  btn.disabled = false;
+}
+
+function makeDiv(cls, text) {
+  const d = document.createElement("div");
+  d.className = cls;
+  d.textContent = text;
+  return d;
+}
+
 document.getElementById("scan-quickdiscover").addEventListener("click", async () => {
   // Full-range scan for 15s, then auto-switch to sniff on the top address.
   state.channelActivity.clear();
