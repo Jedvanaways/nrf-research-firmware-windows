@@ -107,8 +107,11 @@ function pushPacket(tab, ev) {
 
   const tbody = document.getElementById(`${tab}-tbody`);
   const row = document.createElement("tr");
+  const src = ev.source || (ev.mode === "external" ? "ext" : "nRF24");
+  const srcClass = src === "nRF24" ? "src-nrf24" : "src-external";
   row.innerHTML = `
     <td>${new Date(ev.t * 1000).toISOString().slice(11, 23)}</td>
+    <td><span class="src-chip ${srcClass}">${src}</span></td>
     <td>${ev.ch ?? "—"}</td>
     <td>${ev.length ?? "—"}</td>
     <td>${ev.addr ?? ""}</td>

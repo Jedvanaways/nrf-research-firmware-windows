@@ -77,6 +77,20 @@ class AIChatReq(BaseModel):
     history: list = Field(default_factory=list)
 
 
+class ExternalPacket(BaseModel):
+    """
+    Packet pushed from an external radio source (e.g. ESP32 + LT8910).
+    Only `payload` is required; everything else is best-effort metadata.
+    """
+    payload: str                              # hex, optionally colon-separated
+    addr: str | None = None                   # same convention as local packets
+    ch: int | None = None
+    length: int | None = None
+    source: str = "external"                  # label shown in the UI
+    rssi: int | None = None                   # optional signal strength
+    t: float | None = None                    # optional timestamp (else server time)
+
+
 # -----------------------------------------------------------------------------
 # App + worker wiring
 # -----------------------------------------------------------------------------
@@ -222,6 +236,51 @@ async def recording_stop():
     assert worker is not None
     worker.command_queue.put(Command("recording_stop", {}))
     return {"ok": True}
+
+
+@app.post("/api/external/packet")
+async def external_packet(pkt: ExternalPacket):
+    """
+    Ingest a packet from an external radio source. Normalises the payload,
+    emits it as a 'packet' event on the same pipeline as local captures
+    (ring buffer + recording tee + WS broadcast + Learn-mode visibility).
+    """
+    assert worker is not None
+    payload = pkt.payload.replace(":", "").replace(" ", "")
+    # Pretty-print with colons for UI consistency
+    try:
+        b = bytes.fromhex(payload)
+        payload_disp = ":".join(f"{x:02X}" for x in b)
+        length = pkt.length if pkt.length is not None else len(b)
+    except ValueError:
+        payload_disp = pkt.payload
+        length = pkt.length or 0
+
+    import time as _time
+    event = {
+        "type": "packet",
+        "t": pkt.t if pkt.t is not None else _time.time(),
+        "mode": "external",
+        "source": pkt.source,
+        "ch": pkt.ch,
+        "addr": (pkt.addr or "").upper(),
+        "payload": payload_disp,
+        "length": length,
+    }
+    if pkt.rssi is not None:
+        event["rssi"] = pkt.rssi
+
+    worker.packet_count += 1
+    worker._emit(event)
+    return {"ok": True}
+
+
+@app.post("/api/external/packets")
+async def external_packets(payload: list[ExternalPacket]):
+    """Batch version of /api/external/packet for ESP32s pushing many packets."""
+    for p in payload:
+        await external_packet(p)
+    return {"ok": True, "count": len(payload)}
 
 
 @app.get("/api/recent_packets")

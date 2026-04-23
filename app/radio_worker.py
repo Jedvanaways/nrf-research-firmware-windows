@@ -318,6 +318,7 @@ class RadioWorker(threading.Thread):
             self._emit(_event(
                 "packet",
                 mode="scan",
+                source="nRF24",
                 ch=self.current_channel,
                 addr=":".join(f"{b:02X}" for b in address),
                 payload=":".join(f"{b:02X}" for b in payload),
@@ -414,6 +415,7 @@ class RadioWorker(threading.Thread):
             self._emit(_event(
                 "packet",
                 mode="sniff",
+                source="nRF24",
                 ch=self.current_channel,
                 addr=self._sniff_address_str,
                 payload=":".join(f"{b:02X}" for b in payload),

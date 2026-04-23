@@ -252,9 +252,22 @@ button {
 .packets tbody tr:hover { background: var(--bg-elev-2); }
 
 .packets th:nth-child(1), .packets td:nth-child(1) { width: 90px; }
-.packets th:nth-child(2), .packets td:nth-child(2) { width: 40px; }
+.packets th:nth-child(2), .packets td:nth-child(2) { width: 60px; }
 .packets th:nth-child(3), .packets td:nth-child(3) { width: 40px; }
-.packets th:nth-child(4), .packets td:nth-child(4) { width: 150px; }
+.packets th:nth-child(4), .packets td:nth-child(4) { width: 40px; }
+.packets th:nth-child(5), .packets td:nth-child(5) { width: 150px; }
+
+.src-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.src-nrf24 { background: rgba(79,209,197,0.15); color: var(--accent); border: 1px solid rgba(79,209,197,0.3); }
+.src-external { background: rgba(245,169,107,0.15); color: var(--warn); border: 1px solid rgba(245,169,107,0.3); }
 
 .empty-row td {
   text-align: center;
