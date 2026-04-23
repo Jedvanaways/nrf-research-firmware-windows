@@ -44,6 +44,14 @@
           <label>Prefix (hex, optional)
             <input type="text" id="scan-prefix" placeholder="e.g. AA:BB or empty" value="">
           </label>
+          <label title="ESB is Bastille default. Generic modes drop CRC checking and let you pick a data rate — try these if ESB finds nothing.">Mode
+            <select id="scan-mode">
+              <option value="esb">ESB (default)</option>
+              <option value="generic_2m">Generic 2 Mbps</option>
+              <option value="generic_1m">Generic 1 Mbps</option>
+              <option value="generic_250k">Generic 250 kbps</option>
+            </select>
+          </label>
         </div>
         <div class="control-row">
           <button id="scan-start" class="btn-primary">Start scan</button>

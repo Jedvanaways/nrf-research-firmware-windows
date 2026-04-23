@@ -49,6 +49,7 @@ class ScanStart(BaseModel):
     channels: list[int] | None = None
     dwell_ms: float = 100.0
     prefix: str = ""
+    scan_mode: str = "esb"  # "esb" | "generic_2m" | "generic_1m" | "generic_250k"
 
 
 class SniffStart(BaseModel):

@@ -263,13 +263,30 @@ class RadioWorker(threading.Thread):
         if len(prefix) > 5:
             raise ValueError("prefix address max 5 bytes")
 
+        # Scan mode selector: "esb" (default, CRC-checked ESB), "generic_2m",
+        # "generic_1m", "generic_250k" (no-CRC generic mode at different data
+        # rates — broader catch, noisier).
+        scan_mode = (params.get("scan_mode") or "esb").lower()
+        rate_map = {
+            "generic_2m": 2,    # RF_RATE_2M
+            "generic_1m": 1,    # RF_RATE_1M
+            "generic_250k": 0,  # RF_RATE_250K
+        }
+
         self._scan_channels = [int(c) for c in channels]
         self._scan_dwell_s = dwell_ms / 1000.0
         self._scan_prefix = prefix
         self._scan_index = 0
         self._scan_last_tune = time.time()
 
-        self._radio.enter_promiscuous_mode(prefix)
+        if scan_mode in rate_map:
+            self._radio.enter_promiscuous_mode_generic(
+                prefix=prefix, rate=rate_map[scan_mode], payload_length=32,
+            )
+            log.info("scan_mode=%s (generic, rate=%s)", scan_mode, scan_mode)
+        else:
+            self._radio.enter_promiscuous_mode(prefix)
+            log.info("scan_mode=esb")
         self._radio.set_channel(self._scan_channels[0])
         self.current_channel = self._scan_channels[0]
         self._emit(_event("channel", channel=self.current_channel))

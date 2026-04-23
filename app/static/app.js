@@ -262,6 +262,7 @@ document.getElementById("scan-start").addEventListener("click", async () => {
     channels: parseChannels(document.getElementById("scan-channels").value),
     dwell_ms: Number(document.getElementById("scan-dwell").value),
     prefix: document.getElementById("scan-prefix").value,
+    scan_mode: document.getElementById("scan-mode").value,
   };
   state.channelActivity.clear();
   state.addresses.clear();
